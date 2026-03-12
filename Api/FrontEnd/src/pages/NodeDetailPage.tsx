@@ -49,6 +49,7 @@ import { usersApi } from '../api/users';
 import { Node, Comment, NodeListItem, UpdateNodeDto, CreateNodeDto, InheritedType, InheritedState, InheritedRole, InheritedWorkflow, WorkflowWithStates, WorkflowState } from '../types';
 import { useAuthStore } from '../stores/authStore';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
+import MarkdownField from '../components/MarkdownField';
 
 function NodeDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -903,29 +904,22 @@ function NodeDetailPage() {
           {/* Description */}
           <Card sx={{ mb: 2 }}>
             <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="h6">
-                  Description
-                </Typography>
-                <Button
-                  variant="contained"
-                  size="small"
-                  startIcon={<SaveIcon />}
-                  onClick={handleSave}
-                  disabled={isSaving || (description === node.description && manifest === node.manifest && summary === node.summary)}
-                >
-                  {isSaving ? 'Saving...' : saveSuccess ? 'Saved!' : 'Save'}
-                </Button>
-              </Box>
-              <TextField
-                key={`desc-${id}`}
-                fullWidth
-                multiline
-                rows={4}
-                placeholder="No description"
+              <MarkdownField
+                label="Description"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                variant="outlined"
+                onChange={setDescription}
+                placeholder="No description"
+                actions={
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<SaveIcon />}
+                    onClick={handleSave}
+                    disabled={isSaving || (description === node.description && manifest === node.manifest && summary === node.summary)}
+                  >
+                    {isSaving ? 'Saving...' : saveSuccess ? 'Saved!' : 'Save'}
+                  </Button>
+                }
               />
             </CardContent>
           </Card>
@@ -933,18 +927,11 @@ function NodeDetailPage() {
           {/* Manifest */}
           <Card sx={{ mb: 2 }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Manifest
-              </Typography>
-              <TextField
-                key={`manifest-${id}`}
-                fullWidth
-                multiline
-                rows={4}
-                placeholder="No manifest"
+              <MarkdownField
+                label="Manifest"
                 value={manifest}
-                onChange={(e) => setManifest(e.target.value)}
-                variant="outlined"
+                onChange={setManifest}
+                placeholder="No manifest"
               />
             </CardContent>
           </Card>
@@ -952,18 +939,11 @@ function NodeDetailPage() {
           {/* Summary */}
           <Card sx={{ mb: 2 }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Summary
-              </Typography>
-              <TextField
-                key={`summary-${id}`}
-                fullWidth
-                multiline
-                rows={4}
-                placeholder="No summary"
+              <MarkdownField
+                label="Summary"
                 value={summary}
-                onChange={(e) => setSummary(e.target.value)}
-                variant="outlined"
+                onChange={setSummary}
+                placeholder="No summary"
               />
             </CardContent>
           </Card>
