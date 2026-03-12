@@ -157,7 +157,7 @@ After installation, there is
 - exactly one `Role` (called "Superadmin" role) - a functional role with no specific states
 - exactly one `User` whose OAuth subject is obtained during installation; this user has `Rights` set to Admin and `Roles` set to the "Superadmin" role. When this user authenticates via OAuth and their subject matches the stored value, they are recognized as having Admin rights.
 - exactly one `Type` called "Folder" (`Kind` = "Structural")
-- exactly one `Node` called "Root" with `Type` set to "Folder"; Root has its `ChangedRoles` set to include the Superadmin role, which means `InheritedRoles` for Root (and all its descendants) includes this role
+- exactly one `Node` called "Root" with `Type` set to "Folder"; Root has its `ChangedRoles` set to include the Superadmin role, which means `InheritedRoles` for Root (and all its descendants) includes this role; Root also have "Folder" added to it's `AddedNodes` property
 
 This way the "Superadmin" has all the rights required to set up a tree of nodes, assign users etc.
 
@@ -190,7 +190,7 @@ Backend configuration
 ### Public Operations (will be exposed through REST API)
 
 - Node Operations
-  - Get root node - returns the root node (entry point for frontend) (auth: Passive)
+  - Get root node ID - returns only the root node's GUID (lightweight endpoint) (auth: Passive)
   - Create new node - specify parent, type, initial properties (auth: Active)
   - Read node by ID (auth: Passive)
   - List children of a node (auth: Passive)
@@ -238,14 +238,14 @@ Backend configuration
 
 ### Node Operations
 
-#### Get Root Node
+#### Get Root Node ID
 - **Auth**: Passive
 - **Input**: none
 - **Validation**:
   - none (except standard authentication)
 - **Business Rules**:
-  - Return the Root node (node with no parent)
-  - Return node with all properties, including calculated `Inherited*` properties
+  - Return the Root node's ID only (node with no parent)
+  - Lightweight endpoint for frontend redirects from `/nodes/root` to `/nodes/{guid}`
 - **Errors**: `RootNodeNotFound`
 
 #### Create Node
@@ -461,7 +461,7 @@ All endpoints follow RESTful conventions. JSON is used for request/response bodi
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| GET | `/api/nodes/root` | Get root node (entry point for frontend) | Passive |
+| GET | `/api/nodes/root_id` | Get root node ID (lightweight endpoint for frontend redirects) | Passive |
 | POST | `/api/nodes` | Create new node | Active |
 | GET | `/api/nodes/{id}` | Get node by ID | Passive |
 | GET | `/api/nodes/{id}/children` | List children of a node | Passive |
@@ -504,10 +504,11 @@ All endpoints follow RESTful conventions. JSON is used for request/response bodi
 
 ### Request/Response Patterns
 
-#### Get Root Node
+#### Get Root Node ID
 ```
-GET /api/nodes/root
+GET /api/nodes/root_id
 ```
+Response: `{ "id": "uuid" }`
 
 #### Create Node
 ```

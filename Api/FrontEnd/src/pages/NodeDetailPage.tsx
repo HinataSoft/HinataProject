@@ -60,8 +60,18 @@ function NodeDetailPage() {
   // Local state for editable fields
   const [description, setDescription] = useState('');
   const [manifest, setManifest] = useState('');
+  const [summary, setSummary] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Redirect from "root" to actual GUID
+  useEffect(() => {
+    if (id === 'root') {
+      nodesApi.getRootId().then(rootId => {
+        navigate(`/nodes/${rootId}`, { replace: true });
+      });
+    }
+  }, [id, navigate]);
 
   // Local state for workflow selection
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string>('');
@@ -80,11 +90,12 @@ function NodeDetailPage() {
 
   // Edit Types dialog state
   const [editTypesOpen, setEditTypesOpen] = useState(false);
-  const [addedTypes, setAddedTypes] = useState<{ typeId: string; name: string; kind: string; color: string; isNew?: boolean }[]>([]);
+  const [addedTypes, setAddedTypes] = useState<{ typeId: string; name: string; kind: string; color: string; defaultWorkflowId?: string; isNew?: boolean }[]>([]);
   const [removedTypeIds, setRemovedTypeIds] = useState<string[]>([]);
   const [newTypeName, setNewTypeName] = useState('');
   const [newTypeKind, setNewTypeKind] = useState<'Structural' | 'Stateful'>('Structural');
   const [newTypeColor, setNewTypeColor] = useState('#1976d2');
+  const [newTypeDefaultWorkflowId, setNewTypeDefaultWorkflowId] = useState<string>('');
 
   // Edit Roles dialog state
   const [editRolesOpen, setEditRolesOpen] = useState(false);
@@ -172,6 +183,7 @@ function NodeDetailPage() {
     setNewComment('');
     setDescription('');
     setManifest('');
+    setSummary('');
     setSaveSuccess(false);
     setNewChildType('');
     setNewChildCaption('');
@@ -223,6 +235,7 @@ function NodeDetailPage() {
     if (nodeQuery.data) {
       setDescription(nodeQuery.data.description || '');
       setManifest(nodeQuery.data.manifest || '');
+      setSummary(nodeQuery.data.summary || '');
       // Initialize workflow and state selection for stateful nodes
       if (nodeQuery.data.type?.kind === 'Stateful') {
         setSelectedWorkflowId(nodeQuery.data.workflow?.id || '');
@@ -311,6 +324,9 @@ function NodeDetailPage() {
     }
     if (manifest !== nodeQuery.data?.manifest) {
       updates.manifest = manifest;
+    }
+    if (summary !== nodeQuery.data?.summary) {
+      updates.summary = summary;
     }
     if (Object.keys(updates).length > 0) {
       updateNodeMutation.mutate(updates);
@@ -405,12 +421,14 @@ function NodeDetailPage() {
         name: newTypeName.trim(),
         kind: newTypeKind,
         color: newTypeColor,
+        defaultWorkflowId: newTypeDefaultWorkflowId || undefined,
         isNew: true,
       };
       setAddedTypes([...addedTypes, newType]);
       setNewTypeName('');
       setNewTypeKind('Structural');
       setNewTypeColor('#1976d2');
+      setNewTypeDefaultWorkflowId('');
     }
   };
 
@@ -481,6 +499,13 @@ function NodeDetailPage() {
       .filter(s => stateIds.includes(s.id))
       .map(s => s.name) || [];
     return names.join(', ');
+  };
+
+  // Helper function to get workflow name from ID
+  const getWorkflowName = (workflowId?: string): string => {
+    if (!workflowId) return '';
+    const workflow = nodeQuery.data?.inheritedWorkflows?.find(w => w.id === workflowId);
+    return workflow?.name || '';
   };
 
   // Initialize edit workflows dialog when opening
@@ -680,6 +705,20 @@ function NodeDetailPage() {
             }}
           />
         )}
+        <Box
+          component="span"
+          sx={{
+            px: 1,
+            py: 0.5,
+            bgcolor: 'grey.200',
+            borderRadius: 1,
+            fontSize: '0.9rem',
+            fontWeight: 'bold',
+            color: 'text.primary',
+          }}
+        >
+          #{node.publicId}
+        </Box>
         {/* State selector - for stateful nodes with workflow and states */}
         {node.type?.kind === 'Stateful' && node.workflow && node.inheritedWorkflows ? (
           (() => {
@@ -873,7 +912,7 @@ function NodeDetailPage() {
                   size="small"
                   startIcon={<SaveIcon />}
                   onClick={handleSave}
-                  disabled={isSaving || (description === node.description && manifest === node.manifest)}
+                  disabled={isSaving || (description === node.description && manifest === node.manifest && summary === node.summary)}
                 >
                   {isSaving ? 'Saving...' : saveSuccess ? 'Saved!' : 'Save'}
                 </Button>
@@ -905,6 +944,25 @@ function NodeDetailPage() {
                 placeholder="No manifest"
                 value={manifest}
                 onChange={(e) => setManifest(e.target.value)}
+                variant="outlined"
+              />
+            </CardContent>
+          </Card>
+
+          {/* Summary */}
+          <Card sx={{ mb: 2 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Summary
+              </Typography>
+              <TextField
+                key={`summary-${id}`}
+                fullWidth
+                multiline
+                rows={4}
+                placeholder="No summary"
+                value={summary}
+                onChange={(e) => setSummary(e.target.value)}
                 variant="outlined"
               />
             </CardContent>
@@ -1093,27 +1151,32 @@ function NodeDetailPage() {
                     size="small"
                     sx={{ mr: 1, bgcolor: type.color, color: 'white', fontWeight: 'bold' }}
                   />
-                  <ListItemText primary={type.name} secondary={`${type.kind}`} />
+                  <ListItemText primary={type.name} secondary={type.defaultWorkflowId ? `${type.kind} • ${getWorkflowName(type.defaultWorkflowId)}` : type.kind} />
                 </ListItem>
               ))}
             </List>
           )}
 
           {/* Add New Type */}
-          <Box sx={{ display: 'flex', gap: 1, mt: 1, mb: 2 }}>
+          <Box sx={{ display: 'flex', gap: 1, mt: 1, mb: 2, flexWrap: 'wrap' }}>
             <TextField
               size="small"
               placeholder="New type name"
               value={newTypeName}
               onChange={(e) => setNewTypeName(e.target.value)}
-              sx={{ flexGrow: 1 }}
+              sx={{ flexGrow: 1, minWidth: 120 }}
             />
             <FormControl size="small" sx={{ minWidth: 100 }}>
               <InputLabel>Kind</InputLabel>
               <Select
                 value={newTypeKind}
                 label="Kind"
-                onChange={(e) => setNewTypeKind(e.target.value as 'Structural' | 'Stateful')}
+                onChange={(e) => {
+                  setNewTypeKind(e.target.value as 'Structural' | 'Stateful');
+                  if (e.target.value === 'Structural') {
+                    setNewTypeDefaultWorkflowId('');
+                  }
+                }}
               >
                 <MenuItem value="Structural">Structural</MenuItem>
                 <MenuItem value="Stateful">Stateful</MenuItem>
@@ -1126,6 +1189,21 @@ function NodeDetailPage() {
               onChange={(e) => setNewTypeColor(e.target.value)}
               sx={{ width: 50 }}
             />
+            <FormControl size="small" sx={{ minWidth: 150 }} disabled={newTypeKind === 'Structural'}>
+              <InputLabel>Default Workflow</InputLabel>
+              <Select
+                value={newTypeDefaultWorkflowId}
+                label="Default Workflow"
+                onChange={(e) => setNewTypeDefaultWorkflowId(e.target.value)}
+              >
+                <MenuItem value=""><em>None</em></MenuItem>
+                {node.inheritedWorkflows?.map((workflow: InheritedWorkflow) => (
+                  <MenuItem key={workflow.id} value={workflow.id}>
+                    {workflow.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <Button variant="contained" size="small" onClick={handleAddNewType} disabled={!newTypeName.trim()}>
               Add
             </Button>
@@ -1152,7 +1230,7 @@ function NodeDetailPage() {
                     size="small"
                     sx={{ mr: 1, bgcolor: type.color, color: 'white', fontWeight: 'bold' }}
                   />
-                  <ListItemText primary={type.name} />
+                  <ListItemText primary={type.name} secondary={type.defaultWorkflowId ? getWorkflowName(type.defaultWorkflowId) : undefined} />
                 </ListItem>
               ))}
             </List>

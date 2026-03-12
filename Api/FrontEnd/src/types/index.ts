@@ -4,6 +4,7 @@ export interface NodeType {
   name: string;
   kind: 'Structural' | 'Stateful';
   color: string;
+  defaultWorkflowId?: string;
 }
 
 export interface NodeWorkflow {
@@ -23,6 +24,7 @@ export interface InheritedType {
   name: string;
   kind: 'Structural' | 'Stateful';
   color: string;
+  defaultWorkflowId?: string;
 }
 
 export interface InheritedState {
@@ -44,7 +46,7 @@ export interface InheritedRole {
 }
 
 export interface ChangedTypes {
-  added: { typeId: string; name?: string; kind?: string; color?: string }[];
+  added: { typeId: string; name?: string; kind?: string; color?: string; defaultWorkflowId?: string }[];
   removed: { typeId: string }[];
 }
 

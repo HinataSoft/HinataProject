@@ -1,26 +1,49 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { Box, AppBar, Toolbar, Typography, Button, Container } from '@mui/material';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Box, AppBar, Toolbar, Typography, Button, IconButton, Container } from '@mui/material';
+import HomeIcon from '@mui/icons-material/Home';
 import { useAuthStore } from './stores/authStore';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import NodeDetailPage from './pages/NodeDetailPage';
 
 function App() {
-  const { isAuthenticated, logout } = useAuthStore();
+  const { isAuthenticated, user, logout } = useAuthStore();
+  const navigate = useNavigate();
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <AppBar position="static">
         <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+          <Typography variant="h6" component="div">
             HinataProject
           </Typography>
+          <IconButton color="inherit" onClick={() => navigate('/')} title="Home" sx={{ ml: 1 }}>
+            <HomeIcon />
+          </IconButton>
+          <Box sx={{ flexGrow: 1 }} />
           {isAuthenticated ? (
-            <Button color="inherit" onClick={logout}>
-              Logout
-            </Button>
+            <>
+              {user && (
+                <Typography
+                  variant="body2"
+                  sx={{
+                    mr: 2,
+                    px: 1.5,
+                    py: 0.5,
+                    borderRadius: 1,
+                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                    fontWeight: 500,
+                  }}
+                >
+                  {user.name}
+                </Typography>
+              )}
+              <Button variant="outlined" color="inherit" size="small" onClick={logout}>
+                Logout
+              </Button>
+            </>
           ) : (
-            <Button color="inherit" href="/login">
+            <Button variant="outlined" color="inherit" size="small" href="/login">
               Login
             </Button>
           )}

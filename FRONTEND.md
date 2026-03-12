@@ -153,11 +153,22 @@ export function useCreateNode() {
 ```
 /                           # Home / Dashboard
 /login                      # Login page
-/nodes                      # Node browser
+/nodes                      # Node browser (redirects to /nodes/root)
+/nodes/root                 # Entry point - redirects to /nodes/{root-guid}
 /nodes/:id                  # Node detail
 /nodes/:id/children         # Node children (optional)
 // ... settings, profile, etc.
 ```
+
+### Root Node Navigation
+
+The frontend uses a lightweight approach for accessing the root node:
+
+1. **Initial redirect**: `/nodes` automatically redirects to `/nodes/root`
+2. **Root ID resolution**: When the NodeDetailPage loads with `id === 'root'`, it calls `nodesApi.getRootId()` to fetch the root node's actual GUID
+3. **Final navigation**: The page then navigates to `/nodes/{guid}` with `replace: true`
+
+This approach avoids fetching the full root node data just to get its ID, improving performance for the initial page load.
 
 ## State Management
 
@@ -324,8 +335,8 @@ The main view is Node View. It will show one node at a time with full details. H
 [Node children]                 |----------|
                                 | comment  |
 Description edit field          |----------|
-                                | comment  |
-Manifest edit field             |----------|
+Manifest edit field             | comment  |
+Summary edit field              |----------|
                                 | etc.     |
 List of assigness:              |          |
 |------------------|            |----------|

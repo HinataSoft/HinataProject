@@ -31,26 +31,14 @@ const normalizeNode = (node: any): Node => ({
 });
 
 export const nodesApi = {
-  getRoot: () => client.get<any>('/nodes/root').then(r => normalizeNode(r.data)),
+  getRootId: () => client.get<{ id: string }>('/nodes/root_id').then(r => r.data.id),
 
   getById: (id: string) => {
-    // Handle "root" keyword specially
-    if (id === 'root') {
-      return client.get<any>('/nodes/root').then(r => normalizeNode(r.data));
-    }
     return client.get<any>(`/nodes/${id}`).then(r => normalizeNode(r.data));
   },
 
   getChildren: async (id: string, skip = 0, take = 20) => {
-    let nodeId = id;
-    
-    // If id is "root", first get the root node to find its actual ID
-    if (id === 'root') {
-      const rootNode = await client.get<any>('/nodes/root').then(r => r.data);
-      nodeId = rootNode.Id || rootNode.id;
-    }
-    
-    return client.get<any>(`/nodes/${nodeId}/children`, {
+    return client.get<any>(`/nodes/${id}/children`, {
       params: { skip, take },
     }).then(r => ({
       items: (r.data.items || r.data.Items || []).map(normalizeNodeListItem),
@@ -58,7 +46,7 @@ export const nodesApi = {
     }));
   },
 
-  getAssignedToMe: (skip = 0, take = 20) =>
+  getAssignedToMe: (skip = 0, take = 20): Promise<{ items: NodeListItem[]; totalCount: number }> =>
     client.get<any>('/nodes/assigned-to-me', {
       params: { skip, take },
     }).then(r => ({

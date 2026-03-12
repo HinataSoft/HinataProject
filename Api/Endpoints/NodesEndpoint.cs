@@ -152,8 +152,8 @@ public class NodesEndpoint : IDiscoverableEndpoint
     {
         var group = routeBuilder.MapGroup("/api/nodes");
 
-        // Get root node (entry point for frontend)
-        group.MapGet("/root", GetRoot)
+        // Get root node ID only (lightweight endpoint for redirects)
+        group.MapGet("/root_id", GetRootId)
             .RequireAuthorization("Passive");
 
         // Create new node
@@ -219,20 +219,19 @@ public class NodesEndpoint : IDiscoverableEndpoint
         return Task.CompletedTask;
     }
 
-    private async Task<IResult> GetRoot(
+    private async Task<IResult> GetRootId(
         HinataProjectDataContext db,
         CancellationToken ct)
     {
-        // Root node is identified by having no parent
         var root = await db.Nodes.AsNoTracking()
             .Where(n => n.ParentId == null)
+            .Select(n => n.Id)
             .FirstOrDefaultAsync(ct);
 
-        if (root == null)
-            return Results.NotFound(new { error = "RootNodeNotFound" });
+        if (root == default)
+            return Results.NotFound();
 
-        // return standard GetNode with root id
-        return await GetNode(root.Id, db, ct);
+        return Results.Ok(new { id = root });
     }
 
     private async Task<IResult> CreateNode(
