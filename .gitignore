@@ -11,6 +11,10 @@
 *.sln.docstates
 *.env
 
+# AI
+.claude/
+CLAUDE.md
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 

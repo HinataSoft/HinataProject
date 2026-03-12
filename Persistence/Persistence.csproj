@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AssemblyName>HinataProject.Persistence</AssemblyName>
+        <RootNamespace>HinataProject.Persistence</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="CaseExtensions" Version="1.1.0" />
+      <PackageReference Include="EFCore.NamingConventions" Version="8.0.3" />
+      <PackageReference Include="MicroElements.Swashbuckle.NodaTime" Version="4.0.1" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.14" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.14" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.14">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.14">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+      <PackageReference Include="NodaTime" Version="3.2.2" />
+      <PackageReference Include="NodaTime.Serialization.SystemTextJson" Version="1.3.0" />
+      <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
+      <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NodaTime" Version="8.0.11" />
+      <PackageReference Include="Npgsql.NodaTime" Version="8.0.7" />
+      <PackageReference Include="UUIDNext" Version="4.1.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Domain\Domain.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="Migrations\20250425100223_UsageStatuses.cs" />
+      <Compile Remove="Migrations\20250425100223_UsageStatuses.Designer.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Migrations\" />
+      <Folder Include="Models\" />
+    </ItemGroup>
+</Project>

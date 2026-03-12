@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AssemblyName>HinataProject.Domain</AssemblyName>
+        <RootNamespace>HinataProject.Domain</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="MicroElements.Swashbuckle.NodaTime" Version="4.0.1" />
+      <PackageReference Include="NodaTime" Version="3.2.2" />
+      <PackageReference Include="NodaTime.Serialization.SystemTextJson" Version="1.3.0" />
+    </ItemGroup>
+
+</Project>
