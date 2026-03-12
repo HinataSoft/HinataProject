@@ -1,10 +1,8 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.IdentityModel.Tokens;
+
 using HinataProject.Api;
 using HinataProject.Api.Extensions;
-using HinataProject.Persistence;
 using HinataProject.Persistence.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -43,17 +41,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = authConfig.GetValue<bool>("ValidateAudience"),
             ValidateLifetime = authConfig.GetValue<bool>("ValidateLifetime"),
             ValidateIssuerSigningKey = authConfig.GetValue<bool>("ValidateIssuerSigningKey"),
-            RoleClaimType = authConfig["RoleClaimType"] ?? "roles",
             NameClaimType = authConfig["NameClaimType"] ?? "name",
-
         };
     });
 
-builder.Services.AddAuthorizationBuilder()
-    .AddPolicy("Passive", policy => policy.RequireClaim("sub"))
-    .AddPolicy("Active", policy => policy.RequireClaim("sub"))
-    .AddPolicy("Admin", policy => policy.RequireClaim("sub"));
-
+builder.Services.AddRightsAuthorization();
 builder.AddEndpoints(typeof(Program).Assembly);
 builder.Services.ConfigurePersistence(builder.Configuration);
 
