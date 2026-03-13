@@ -47,7 +47,7 @@ public class OAuthEndpoint : IDiscoverableEndpoint
         CancellationToken ct)
     {
         var oauthConfig = configuration.GetSection("Frontend:OAuth");
-        
+
         // Get token endpoint from config
         var tokenEndpoint = oauthConfig["TokenEndpoint"];
         if (string.IsNullOrEmpty(tokenEndpoint))
@@ -58,19 +58,45 @@ public class OAuthEndpoint : IDiscoverableEndpoint
         // Note: In production, the client_secret should be stored securely (not in config)
         var clientId = oauthConfig["ClientId"] ?? "";
         var clientSecret = oauthConfig["ClientSecret"] ?? "";
-        var redirectUri = oauthConfig["RedirectUri"] ?? "";
 
-        try
+        // Determine grant type
+        string grantType;
+        Dictionary<string, string> formData;
+
+        if (!string.IsNullOrEmpty(request.RefreshToken))
         {
-            // Exchange authorization code for tokens
-            var formContent = new FormUrlEncodedContent(new Dictionary<string, string>
+            // Refresh token grant
+            grantType = "refresh_token";
+            formData = new Dictionary<string, string>
             {
-                { "grant_type", "authorization_code" },
+                { "grant_type", grantType },
+                { "refresh_token", request.RefreshToken },
+                { "client_id", clientId },
+                { "client_secret", clientSecret }
+            };
+        }
+        else if (!string.IsNullOrEmpty(request.Code))
+        {
+            // Authorization code grant
+            var redirectUri = oauthConfig["RedirectUri"] ?? "";
+            grantType = "authorization_code";
+            formData = new Dictionary<string, string>
+            {
+                { "grant_type", grantType },
                 { "code", request.Code },
                 { "redirect_uri", redirectUri },
                 { "client_id", clientId },
                 { "client_secret", clientSecret }
-            });
+            };
+        }
+        else
+        {
+            return Results.BadRequest(new { error = "Missing required parameter: either 'code' or 'refresh_token' must be provided" });
+        }
+
+        try
+        {
+            var formContent = new FormUrlEncodedContent(formData);
 
             var httpClient = new HttpClient();
             var response = await httpClient.PostAsync(tokenEndpoint, formContent, ct);
@@ -103,6 +129,7 @@ public class OAuthEndpoint : IDiscoverableEndpoint
 
 public class TokenRequestDto
 {
-    public string Code { get; set; } = string.Empty;
+    public string? Code { get; set; } // For authorization_code grant
+    public string? RefreshToken { get; set; } // For refresh_token grant
     public string? RedirectUri { get; set; }
 }
