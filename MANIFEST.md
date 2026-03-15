@@ -57,6 +57,22 @@ All operations are performed via the REST API. As a "user" can be both a human a
 - Change Workflow State (if authorized via Role-User mapping)
 - Manage Assignees (map Roles to Users)
 
+### MCP Server
+
+The application exposes an MCP (Model Context Protocol) server that provides additional tools for AI agents. MCP tools are available at `/mcp` endpoint.
+
+#### Available MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| `get_node` | Get a node by its ID |
+| `list_children` | List children of a node |
+| `get_assigned_to_me` | List nodes assigned to the current user |
+| `update_node` | Update node properties (Manifest, Caption, Description, Summary) |
+| `set_node_state` | Transition a node to a different workflow state |
+| `add_comment` | Add a comment to a node |
+| `create_similar_child` | Create a new child node that inherits type, workflow, and assignees from parent. The new node's state is set to the workflow's default state. |
+
 ## Data structure
 
 The main object of HinataProject is `Node` which represents numerous work items like Project, Task, Bug etc. The concrete type of `Node` is user defined through the hierarchical type system: users define available types by setting `ChangedTypes` on ancestor nodes, which propagate down to descendants via `InheritedTypes`. Nothing like Task is hardcoded in HinataProject – all types are created and managed by users through this mechanism. The only hardcoded `Node` type is "Folder".

@@ -59,6 +59,7 @@ builder.Services.AddSingleton<IToolHandler, GetAssignedToMeTool>();
 builder.Services.AddSingleton<IToolHandler, SetNodeStateTool>();
 builder.Services.AddSingleton<IToolHandler, AddCommentTool>();
 builder.Services.AddSingleton<IToolHandler, UpdateNodeTool>();
+builder.Services.AddSingleton<IToolHandler, CreateSimilarChildTool>();
 
 builder.AddEndpoints(typeof(Program).Assembly);
 builder.Services.ConfigurePersistence(builder.Configuration);
