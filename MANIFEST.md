@@ -373,7 +373,7 @@ Backend configuration
   - `NodeId` must exist
   - `Node.Type.Kind` must be Stateful
   - `TargetStateId` must belong to `Node.Workflow.States`
-  - User must have a Role in `Node.Assignees` whose `Role.States` contains the target state (or Role has Admin rights)
+  - User must be Admin OR the current assignee for the node (the user assigned to the role corresponding to the current state)
 - **Business Rules**:
   - Update `Node.State` to `TargetStateId`
   - Create `AuditLogEntry` for the state change

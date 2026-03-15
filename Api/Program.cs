@@ -3,6 +3,9 @@ using Microsoft.IdentityModel.Tokens;
 
 using HinataProject.Api;
 using HinataProject.Api.Extensions;
+using HinataProject.Api.Mcp;
+using HinataProject.Api.Mcp.Tools;
+using HinataProject.Api.Mcp.Tools.NodeTools;
 using HinataProject.Persistence.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -46,6 +49,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddRightsAuthorization();
+
+// MCP Server
+builder.Services.AddSingleton<ToolRegistry>();
+builder.Services.AddSingleton<McpServer>();
+builder.Services.AddSingleton<IToolHandler, GetNodeTool>();
+builder.Services.AddSingleton<IToolHandler, ListChildrenTool>();
+builder.Services.AddSingleton<IToolHandler, GetAssignedToMeTool>();
+builder.Services.AddSingleton<IToolHandler, SetNodeStateTool>();
+builder.Services.AddSingleton<IToolHandler, AddCommentTool>();
+builder.Services.AddSingleton<IToolHandler, UpdateNodeTool>();
+
 builder.AddEndpoints(typeof(Program).Assembly);
 builder.Services.ConfigurePersistence(builder.Configuration);
 

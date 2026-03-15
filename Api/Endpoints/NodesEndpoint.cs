@@ -944,11 +944,15 @@ public class NodesEndpoint : IDiscoverableEndpoint
         Guid id,
         [FromBody] SetStateDto dto,
         HinataProjectDataContext db,
+        HttpContext httpContext,
         CancellationToken ct)
     {
         var node = await db.Nodes
             .Include(n => n.Type)
             .Include(n => n.Workflow)
+            .Include(n => n.State)
+                .ThenInclude(s => s!.Roles)
+            .Include(n => n.Assignees)
             .FirstOrDefaultAsync(n => n.Id == id, ct);
 
         if (node == null)
@@ -961,7 +965,28 @@ public class NodesEndpoint : IDiscoverableEndpoint
         if (targetState == null || targetState.WorkflowId != node.WorkflowId)
             return Results.BadRequest(new { error = "StateNotInWorkflow" });
 
-        // TODO: Check user authorization for state transition
+        // Get current user from JWT
+        var currentUser = await UserUtils.GetCurrentUserAsync(db, httpContext, ct);
+
+        // Check if user is admin
+        var isAdmin = currentUser.Rights == Domain.Rights.Admin;
+
+        // Authorization: Admin can change state to anything
+        // OR current user must be the current assignee (person the node is assigned to)
+        if (!isAdmin)
+        {
+            // Find the role that corresponds to current state
+            var currentStateRole = node.State?.Roles.FirstOrDefault();
+            if (currentStateRole == null)
+                return Results.BadRequest(new { error = "NoRoleForCurrentState" });
+
+            // Check if current user is assigned to this role on this node
+            var isCurrentAssignee = node.Assignees.Any(a =>
+                a.RoleId == currentStateRole.Id && a.UserId == currentUser.Id);
+
+            if (!isCurrentAssignee)
+                return Results.Forbid();
+        }
 
         node.StateId = dto.TargetStateId;
         await db.SaveChangesAsync(ct);
