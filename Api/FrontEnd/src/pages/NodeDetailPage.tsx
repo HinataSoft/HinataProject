@@ -43,6 +43,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import AddIcon from '@mui/icons-material/Add';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ReactMarkdown from 'react-markdown';
 import { nodesApi } from '../api/nodes';
 import { commentsApi } from '../api/comments';
 import { usersApi } from '../api/users';
@@ -1092,11 +1093,22 @@ function NodeDetailPage() {
             ) : (
               <List dense>
                 {commentsQuery.data?.map((comment: Comment) => (
-                  <ListItem key={comment.id} sx={{ px: 0 }}>
-                    <ListItemText
-                      primary={comment.text}
-                      secondary={`${comment.user?.name || 'Unknown'} - ${new Date(comment.createdAt).toLocaleString()}`}
-                    />
+                  <ListItem key={comment.id} sx={{ px: 0, display: 'block' }}>
+                    <Box sx={{ mb: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        {comment.user?.name || 'Unknown'} - {new Date(comment.createdAt).toLocaleString()}
+                      </Typography>
+                    </Box>
+                    <Box
+                      sx={{
+                        '& img': { maxWidth: '100%' },
+                        '& pre': { overflow: 'auto', bgcolor: 'grey.100', p: 1, borderRadius: 1 },
+                        '& code': { bgcolor: 'grey.100', px: 0.5, borderRadius: 0.5, fontSize: '0.875em' },
+                        '& a': { color: 'primary.main' },
+                      }}
+                    >
+                      <ReactMarkdown>{comment.text}</ReactMarkdown>
+                    </Box>
                   </ListItem>
                 ))}
                 {commentsQuery.data?.length === 0 && (
