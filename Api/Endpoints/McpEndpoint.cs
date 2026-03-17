@@ -1,13 +1,11 @@
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
+
+using Microsoft.AspNetCore.Mvc;
+
 using HinataProject.Api.Mcp;
 using HinataProject.Api.Mcp.JsonRpc;
-using HinataProject.Api.Mcp.Tools;
-using HinataProject.Api.Mcp.Tools.NodeTools;
-using HinataProject.Persistence;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 
 namespace HinataProject.Api.Endpoints;
 
@@ -23,25 +21,24 @@ public class McpEndpoint : IDiscoverableEndpoint
     public Task MapEndpoint(IEndpointRouteBuilder routeBuilder)
     {
         var group = routeBuilder.MapGroup("/mcp")
-            ;//.RequireAuthorization("Passive");
+            .RequireAuthorization("Passive");
 
-        //group.MapPost("/", HandleJsonRpc);
+        group.MapPost("/orig", HandleJsonRpc);
+
         group.MapPost("/", async delegate (HttpContext context, ClaimsPrincipal user, CancellationToken ct)
         {
             string jsonstring;
             using (StreamReader reader = new StreamReader(context.Request.Body, Encoding.UTF8))
             { jsonstring = await reader.ReadToEndAsync(ct); }
-
             Console.WriteLine(jsonstring);
-
             var request = JsonSerializer.Deserialize<JsonRpcRequest>(jsonstring);
-
+            if (request is null)
+                return Results.BadRequest();
             var response = await HandleJsonRpc(request, user, ct);
-
+            if (response is Microsoft.AspNetCore.Http.HttpResults.JsonHttpResult<JsonRpcResponse> typedResponse)
+                Console.WriteLine(JsonSerializer.Serialize(typedResponse.Value));
             return response;
-
         });
-
 
         return Task.CompletedTask;
     }
@@ -57,7 +54,6 @@ public class McpEndpoint : IDiscoverableEndpoint
         if (response is null)
             return Results.NoContent();
 
-        Console.WriteLine(JsonSerializer.Serialize(response));
         return Results.Json(response);
     }
 }
