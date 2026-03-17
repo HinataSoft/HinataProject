@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text.Json;
 using HinataProject.Api.Mcp.Tools;
+using HinataProject.Domain;
 using HinataProject.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -46,28 +47,37 @@ public class GetAssignedToMeTool : IToolHandler
         if (currentUser == null)
             return ToolResult.Error("User not found");
 
-        var nodeQuery = db.NodeAssignees
-            .Where(na => na.UserId == currentUser.Id)
-            .Include(na => na.Node).ThenInclude(n => n.Type)
-            .Include(na => na.Node).ThenInclude(n => n.Workflow).ThenInclude(w => w!.States)
-            .Include(na => na.Node).ThenInclude(n => n.State)
-            .AsNoTracking()
-            .Select(na => new
-            {
-                na.Node!.Id,
-                na.Node.Caption,
-                na.Node.Summary,
-                Type = na.Node.Type != null ? new { na.Node.Type.Id, na.Node.Type.Name, na.Node.Type.Kind } : null,
-                Workflow = na.Node.Workflow != null ? new { na.Node.Workflow.Id, na.Node.Workflow.Name, States = na.Node.Workflow.States.Select(s => new { s.Id, s.Name }).ToList() } : null,
-                State = na.Node.State != null ? new { na.Node.State.Id, na.Node.State.Name } : null
-            });
+        // Find all nodes where:
+        // 1. Node is stateful (has a State)
+        // 2. The current state's Role (State.Roles) has an assignee for this user
+        var baseQuery = db.Nodes
+            .Include(n => n.Type)
+            .Include(n => n.State)
+                .ThenInclude(s => s!.Roles)
+            .Where(n => n.StateId != null)
+            .Where(n => n.Type != null && n.Type.Kind == TypeKind.Stateful)
+            .Where(n => n.State!.Roles.Any(role =>
+                db.NodeAssignees.Any(na =>
+                    na.NodeId == n.Id &&
+                    na.RoleId == role.Id &&
+                    na.UserId == currentUser.Id)));
 
-        int nodeCount = await nodeQuery.CountAsync();
+        int nodeCount = await baseQuery.CountAsync(ct);
 
-        var nodeIds = nodeQuery
+        var nodes = await baseQuery
+            .OrderBy(n => n.Id)
             .Skip(skip).Take(take)
             .ToListAsync(ct);
 
-        return ToolResult.Success(new { items = nodeIds, total = nodeCount });
+        var items = nodes.Select(n => new
+        {
+            n.Id,
+            n.ParentId,
+            n.Caption,
+            Type = n.Type != null ? new { n.Type.Id, n.Type.Name, n.Type.Kind } : null,
+            State = n.State != null ? new { n.State.Id, n.State.Name } : null
+        }).ToList();
+
+        return ToolResult.Success(new { items, total = nodeCount });
     }
 }

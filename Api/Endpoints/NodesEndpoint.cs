@@ -4,6 +4,7 @@ using HinataProject.Domain;
 using HinataProject.Persistence;
 using HinataProject.Persistence.Entities;
 using HinataProject.Api.Utils;
+using HinataProject.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
@@ -13,6 +14,13 @@ namespace HinataProject.Api.Endpoints;
 
 public class NodesEndpoint : IDiscoverableEndpoint
 {
+    private readonly NodeChangeSignal _nodeChangeSignal;
+
+    public NodesEndpoint(NodeChangeSignal nodeChangeSignal)
+    {
+        _nodeChangeSignal = nodeChangeSignal;
+    }
+
     /// <summary>
     /// Calculates inherited types for a node by traversing up to root.
     /// For Root node: uses its own ChangedTypes as the source.
@@ -172,6 +180,10 @@ public class NodesEndpoint : IDiscoverableEndpoint
         group.MapGet("/assigned-to-me", GetAssignedToMe)
             .RequireAuthorization("Passive");
 
+        // Long-poll for changes in assigned nodes
+        group.MapGet("/assigned-to-me/poll", PollAssignedToMe)
+            .RequireAuthorization("Passive");
+
         // Update node properties
         group.MapPut("/{id:guid}", UpdateNode)
             .RequireAuthorization("Active");
@@ -306,6 +318,9 @@ public class NodesEndpoint : IDiscoverableEndpoint
 
         db.Nodes.Add(node);
         await db.SaveChangesAsync(ct);
+
+        // Notify assignees of the new node
+        _ = _nodeChangeSignal.NotifyForNode(node.Id);
 
         return Results.Created($"/nodes/{node.Id}", new { id = node.Id });
     }
@@ -473,7 +488,7 @@ public class NodesEndpoint : IDiscoverableEndpoint
         var totalCount = await baseQuery.CountAsync(ct);
         
         var nodes = await baseQuery
-            .OrderBy(n => n.Caption)
+            .OrderBy(n => n.Id)
             .Skip(skip)
             .Take(take)
             .ToListAsync(ct);
@@ -488,6 +503,40 @@ public class NodesEndpoint : IDiscoverableEndpoint
         }).Cast<object>().ToList();
 
         return Results.Ok(new PagedResult<object> { Items = items, TotalCount = totalCount });
+    }
+
+    private async Task<IResult> PollAssignedToMe(
+        HinataProjectDataContext db,
+        HttpContext httpContext,
+        NodeChangeSignal nodeChangeSignal,
+        CancellationToken ct,
+        [FromQuery] DateTime? since = null,
+        [FromQuery] int timeout = 30)
+    {
+        var user = await UserUtils.GetCurrentUserAsync(db, httpContext, ct);
+
+        // Cap timeout to prevent abuse
+        timeout = Math.Clamp(timeout, 1, 60);
+
+        // Wait for a signal or timeout
+        var signaled = await nodeChangeSignal.WaitAsync(user.Id.ToString(), timeout, ct);
+
+        // Now check if anything actually changed since 'since'
+        DateTime? sinceTime = since?.ToUniversalTime();
+
+        // Get the max LastModifiedAt of nodes assigned to this user
+        var maxLastModified = await db.NodeAssignees
+            .Where(na => na.UserId == user.Id)
+            .Select(na => na.Node!.LastModifiedAt)
+            .MaxAsync(ct);
+
+        var hasChanged = (!sinceTime.HasValue || maxLastModified.ToDateTimeUtc() > sinceTime.Value);
+
+        return Results.Ok(new
+        {
+            changed = hasChanged,
+            serverTimestamp = DateTime.UtcNow.ToString("O")
+        });
     }
 
     private async Task<IResult> UpdateNode(
@@ -509,6 +558,10 @@ public class NodesEndpoint : IDiscoverableEndpoint
         if (dto.Summary != null) node.Summary = dto.Summary;
 
         await db.SaveChangesAsync(ct);
+
+        // Notify all assignees that the node was updated
+        _ = _nodeChangeSignal.NotifyForNode(id);
+
         return Results.Ok();
     }
 
@@ -990,6 +1043,10 @@ public class NodesEndpoint : IDiscoverableEndpoint
 
         node.StateId = dto.TargetStateId;
         await db.SaveChangesAsync(ct);
+
+        // Notify all assignees that the node state changed
+        _ = _nodeChangeSignal.NotifyForNode(id);
+
         return Results.Ok();
     }
 
@@ -1027,6 +1084,10 @@ public class NodesEndpoint : IDiscoverableEndpoint
         }
 
         await db.SaveChangesAsync(ct);
+
+        // Notify all assignees that the node workflow changed
+        _ = _nodeChangeSignal.NotifyForNode(id);
+
         return Results.Ok();
     }
 
@@ -1095,6 +1156,10 @@ public class NodesEndpoint : IDiscoverableEndpoint
         }
 
         await db.SaveChangesAsync(ct);
+
+        // Notify all assignees (both old and new) that assignments changed
+        _ = _nodeChangeSignal.NotifyForNode(id);
+
         return Results.Ok();
     }
 
@@ -1161,6 +1226,9 @@ public class NodesEndpoint : IDiscoverableEndpoint
 
         db.Comments.Add(comment);
         await db.SaveChangesAsync(ct);
+
+        // Notify all assignees that a comment was added
+        _ = _nodeChangeSignal.NotifyForNode(nodeId);
 
         return Results.Created($"/nodes/{nodeId}/comments/{comment.Id}", new { id = comment.Id });
     }

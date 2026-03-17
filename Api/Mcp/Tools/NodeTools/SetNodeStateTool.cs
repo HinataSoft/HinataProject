@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text.Json;
 using HinataProject.Api.Mcp.Tools;
+using HinataProject.Api.Services;
 using HinataProject.Domain;
 using HinataProject.Persistence;
 using HinataProject.Persistence.Entities;
@@ -11,10 +12,12 @@ namespace HinataProject.Api.Mcp.Tools.NodeTools;
 public class SetNodeStateTool : IToolHandler
 {
     private readonly IDbContextFactory<HinataProjectDataContext> _dbFactory;
+    private readonly NodeChangeSignal _nodeChangeSignal;
 
-    public SetNodeStateTool(IDbContextFactory<HinataProjectDataContext> dbFactory)
+    public SetNodeStateTool(IDbContextFactory<HinataProjectDataContext> dbFactory, NodeChangeSignal nodeChangeSignal)
     {
         _dbFactory = dbFactory;
+        _nodeChangeSignal = nodeChangeSignal;
     }
 
     public string Name => "set_node_state";
@@ -103,6 +106,9 @@ public class SetNodeStateTool : IToolHandler
 
         node.StateId = targetStateId;
         await db.SaveChangesAsync(ct);
+
+        // Notify all assignees that the node changed
+        _ = _nodeChangeSignal.NotifyForNode(nodeId);
 
         return ToolResult.Success(new
         {

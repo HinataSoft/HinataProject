@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text.Json;
 using HinataProject.Api.Mcp.Tools;
+using HinataProject.Api.Services;
 using HinataProject.Persistence;
 using HinataProject.Persistence.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -10,10 +11,12 @@ namespace HinataProject.Api.Mcp.Tools.NodeTools;
 public class CreateSimilarChildTool : IToolHandler
 {
     private readonly IDbContextFactory<HinataProjectDataContext> _dbFactory;
+    private readonly NodeChangeSignal _nodeChangeSignal;
 
-    public CreateSimilarChildTool(IDbContextFactory<HinataProjectDataContext> dbFactory)
+    public CreateSimilarChildTool(IDbContextFactory<HinataProjectDataContext> dbFactory, NodeChangeSignal nodeChangeSignal)
     {
         _dbFactory = dbFactory;
+        _nodeChangeSignal = nodeChangeSignal;
     }
 
     public string Name => "create_similar_child";
@@ -106,6 +109,9 @@ public class CreateSimilarChildTool : IToolHandler
         }
 
         await db.SaveChangesAsync(ct);
+
+        // Notify assignees of the new child node
+        _ = _nodeChangeSignal.NotifyForNode(child.Id);
 
         return ToolResult.Success(new
         {

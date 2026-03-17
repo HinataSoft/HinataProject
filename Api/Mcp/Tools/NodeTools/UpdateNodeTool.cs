@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text.Json;
 using HinataProject.Api.Mcp.Tools;
+using HinataProject.Api.Services;
 using HinataProject.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,10 +10,12 @@ namespace HinataProject.Api.Mcp.Tools.NodeTools;
 public class UpdateNodeTool : IToolHandler
 {
     private readonly IDbContextFactory<HinataProjectDataContext> _dbFactory;
+    private readonly NodeChangeSignal _nodeChangeSignal;
 
-    public UpdateNodeTool(IDbContextFactory<HinataProjectDataContext> dbFactory)
+    public UpdateNodeTool(IDbContextFactory<HinataProjectDataContext> dbFactory, NodeChangeSignal nodeChangeSignal)
     {
         _dbFactory = dbFactory;
+        _nodeChangeSignal = nodeChangeSignal;
     }
 
     public string Name => "update_node";
@@ -81,6 +84,9 @@ public class UpdateNodeTool : IToolHandler
             return ToolResult.Error("NoPropertiesToUpdate");
 
         await db.SaveChangesAsync(ct);
+
+        // Notify all assignees that the node changed
+        _ = _nodeChangeSignal.NotifyForNode(nodeId);
 
         return ToolResult.Success(new
         {

@@ -482,6 +482,7 @@ All endpoints follow RESTful conventions. JSON is used for request/response bodi
 | GET | `/api/nodes/{id}` | Get node by ID | Passive |
 | GET | `/api/nodes/{id}/children` | List children of a node | Passive |
 | GET | `/api/nodes/assigned-to-me` | List nodes assigned to current user | Passive |
+| GET | `/api/nodes/assigned-to-me/poll` | Long-poll for changes in assigned nodes (blocks until change or timeout) | Passive |
 | PUT | `/api/nodes/{id}` | Update node properties | Active |
 | DELETE | `/api/nodes/{id}` | Delete node (recursive) | Admin |
 
@@ -560,6 +561,17 @@ Body: { "text": "comment text" }
 ```
 GET /api/nodes/{id}/children?skip=0&take=20
 ```
+
+#### Poll for Assigned Changes (long-polling)
+```
+GET /api/nodes/assigned-to-me/poll?since=2024-01-01T00:00:00Z&timeout=30
+```
+Response: `{ "changed": true, "serverTimestamp": "2024-01-01T12:00:00Z" }`
+
+- `since`: ISO 8601 timestamp of last check (optional)
+- `timeout`: seconds to wait for changes (default 30, max 60)
+- Returns immediately when any assigned node changes, or after timeout
+- Use `serverTimestamp` from response for next poll's `since` parameter
 
 #### List Comments (with pagination)
 ```

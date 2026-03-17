@@ -6,6 +6,7 @@ using HinataProject.Api.Extensions;
 using HinataProject.Api.Mcp;
 using HinataProject.Api.Mcp.Tools;
 using HinataProject.Api.Mcp.Tools.NodeTools;
+using HinataProject.Api.Services;
 using HinataProject.Persistence.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -53,6 +54,7 @@ builder.Services.AddRightsAuthorization();
 // MCP Server
 builder.Services.AddSingleton<ToolRegistry>();
 builder.Services.AddSingleton<McpServer>();
+builder.Services.AddSingleton<NodeChangeSignal>();
 builder.Services.AddSingleton<IToolHandler, GetNodeTool>();
 builder.Services.AddSingleton<IToolHandler, ListChildrenTool>();
 builder.Services.AddSingleton<IToolHandler, GetAssignedToMeTool>();

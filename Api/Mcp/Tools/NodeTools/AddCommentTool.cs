@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text.Json;
 using HinataProject.Api.Mcp.Tools;
+using HinataProject.Api.Services;
 using HinataProject.Persistence;
 using HinataProject.Persistence.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -10,10 +11,12 @@ namespace HinataProject.Api.Mcp.Tools.NodeTools;
 public class AddCommentTool : IToolHandler
 {
     private readonly IDbContextFactory<HinataProjectDataContext> _dbFactory;
+    private readonly NodeChangeSignal _nodeChangeSignal;
 
-    public AddCommentTool(IDbContextFactory<HinataProjectDataContext> dbFactory)
+    public AddCommentTool(IDbContextFactory<HinataProjectDataContext> dbFactory, NodeChangeSignal nodeChangeSignal)
     {
         _dbFactory = dbFactory;
+        _nodeChangeSignal = nodeChangeSignal;
     }
 
     public string Name => "add_comment";
@@ -64,6 +67,9 @@ public class AddCommentTool : IToolHandler
 
         db.Comments.Add(comment);
         await db.SaveChangesAsync(ct);
+
+        // Notify all assignees that the node changed
+        _ = _nodeChangeSignal.NotifyForNode(nodeId);
 
         return ToolResult.Success(new
         {
