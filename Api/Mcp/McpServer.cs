@@ -31,6 +31,7 @@ public class McpServer
             return request.Method switch
             {
                 "initialize" => HandleInitializeAsync(request, ct),
+                "ping" => HandlePingAsync(request, ct),
                 "tools/list" => HandleToolsListAsync(request, ct),
                 "tools/call" => HandleToolsCallAsync(request, user, ct),
                 _ => Task.FromResult<JsonRpcResponse?>(JsonRpcResponse.FromError(request.Id, JsonRpcError.MethodNotFound))
@@ -61,8 +62,16 @@ public class McpServer
         var result = new
         {
             protocolVersion = "2024-11-05",
-            capabilities = new { tools = new { } },
+            capabilities = new { tools = new { listChanged = true } },
             serverInfo = new { name = "HinataProject MCP Server", version = "1.0.0" }
+        };
+        return Task.FromResult<JsonRpcResponse?>(JsonRpcResponse.Success(request.Id, result));
+    }
+
+    private static Task<JsonRpcResponse?> HandlePingAsync(JsonRpcRequest request, CancellationToken ct)
+    {
+        var result = new
+        {
         };
         return Task.FromResult<JsonRpcResponse?>(JsonRpcResponse.Success(request.Id, result));
     }
