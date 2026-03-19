@@ -188,6 +188,10 @@ public class NodesEndpoint : IDiscoverableEndpoint
         group.MapPut("/{id:guid}", UpdateNode)
             .RequireAuthorization("Active");
 
+        // Update guardrails (Admin only)
+        group.MapPut("/{id:guid}/guardrails", UpdateGuardrails)
+            .RequireAuthorization("Admin");
+
         // Delete node
         group.MapDelete("/{id:guid}", DeleteNode)
             .RequireAuthorization("Admin");
@@ -287,7 +291,7 @@ public class NodesEndpoint : IDiscoverableEndpoint
             Manifest = dto.Manifest ?? string.Empty,
             Caption = dto.Caption ?? string.Empty,
             Description = dto.Description ?? string.Empty,
-            Summary = dto.Summary ?? string.Empty
+            Guardrails = dto.Guardrails ?? string.Empty
         };
 
         // If stateful type, workflow is required
@@ -412,7 +416,7 @@ public class NodesEndpoint : IDiscoverableEndpoint
             node.Manifest,
             node.Caption,
             node.Description,
-            node.Summary,
+            node.Guardrails,
             Type = node.Type != null ? new { node.Type.Id, node.Type.Name, node.Type.Kind, node.Type.Color } : null,
             Workflow = node.Workflow != null ? new { node.Workflow.Id, node.Workflow.Name } : null,
             State = node.State != null ? new { node.State.Id, node.State.Name, node.State.IsFinalSuccess, node.State.IsFinalFailure } : null,
@@ -549,17 +553,34 @@ public class NodesEndpoint : IDiscoverableEndpoint
         if (node == null)
             return Results.NotFound(new { error = "NodeNotFound" });
 
-        if (dto.Manifest == null && dto.Caption == null && dto.Description == null && dto.Summary == null)
+        if (dto.Manifest == null && dto.Caption == null && dto.Description == null)
             return Results.BadRequest(new { error = "NoPropertiesToUpdate" });
 
         if (dto.Manifest != null) node.Manifest = dto.Manifest;
         if (dto.Caption != null) node.Caption = dto.Caption;
         if (dto.Description != null) node.Description = dto.Description;
-        if (dto.Summary != null) node.Summary = dto.Summary;
 
         await db.SaveChangesAsync(ct);
 
         // Notify all assignees that the node was updated
+        _ = _nodeChangeSignal.NotifyForNode(id);
+
+        return Results.Ok();
+    }
+
+    private async Task<IResult> UpdateGuardrails(
+        Guid id,
+        [FromBody] UpdateGuardrailsDto dto,
+        HinataProjectDataContext db,
+        CancellationToken ct)
+    {
+        var node = await db.Nodes.FindAsync(new object[] { id }, ct);
+        if (node == null)
+            return Results.NotFound(new { error = "NodeNotFound" });
+
+        node.Guardrails = dto.Guardrails;
+        await db.SaveChangesAsync(ct);
+
         _ = _nodeChangeSignal.NotifyForNode(id);
 
         return Results.Ok();

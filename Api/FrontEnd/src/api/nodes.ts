@@ -17,7 +17,7 @@ const normalizeNode = (node: any): Node => ({
   manifest: node.Manifest || node.manifest,
   caption: node.Caption || node.caption,
   description: node.Description || node.description,
-  summary: node.Summary || node.summary,
+  guardrails: node.Guardrails || node.guardrails,
   type: node.Type || node.type,
   workflow: node.Workflow || node.workflow,
   state: node.State || node.state,
@@ -60,6 +60,9 @@ export const nodesApi = {
     // Send as camelCase - backend is configured to handle it
     return client.put(`/nodes/${id}`, data);
   },
+
+  updateGuardrails: (id: string, guardrails: string) =>
+    client.put(`/nodes/${id}/guardrails`, { guardrails }),
 
   delete: (id: string) => client.delete(`/nodes/${id}`),
 

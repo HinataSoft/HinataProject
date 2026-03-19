@@ -62,7 +62,7 @@ function NodeDetailPage() {
   // Local state for editable fields
   const [description, setDescription] = useState('');
   const [manifest, setManifest] = useState('');
-  const [summary, setSummary] = useState('');
+  const [guardrails, setGuardrails] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -185,7 +185,7 @@ function NodeDetailPage() {
     setNewComment('');
     setDescription('');
     setManifest('');
-    setSummary('');
+    setGuardrails('');
     setSaveSuccess(false);
     setNewChildType('');
     setNewChildCaption('');
@@ -237,7 +237,7 @@ function NodeDetailPage() {
     if (nodeQuery.data) {
       setDescription(nodeQuery.data.description || '');
       setManifest(nodeQuery.data.manifest || '');
-      setSummary(nodeQuery.data.summary || '');
+      setGuardrails(nodeQuery.data.guardrails || '');
       // Initialize workflow and state selection for stateful nodes
       if (nodeQuery.data.type?.kind === 'Stateful') {
         setSelectedWorkflowId(nodeQuery.data.workflow?.id || '');
@@ -319,6 +319,32 @@ function NodeDetailPage() {
     },
   });
 
+  // Guardrails save (Admin only, separate endpoint)
+  const [isGuardrailsSaving, setIsGuardrailsSaving] = useState(false);
+  const [guardrailsSaveSuccess, setGuardrailsSaveSuccess] = useState(false);
+
+  const updateGuardrailsMutation = useMutation({
+    mutationFn: async (text: string) => {
+      setIsGuardrailsSaving(true);
+      await nodesApi.updateGuardrails(id!, text);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['node', id] });
+      setIsGuardrailsSaving(false);
+      setGuardrailsSaveSuccess(true);
+      setTimeout(() => setGuardrailsSaveSuccess(false), 2000);
+    },
+    onError: () => {
+      setIsGuardrailsSaving(false);
+    },
+  });
+
+  const handleGuardrailsSave = () => {
+    if (guardrails !== nodeQuery.data?.guardrails) {
+      updateGuardrailsMutation.mutate(guardrails);
+    }
+  };
+
   const handleSave = () => {
     const updates: UpdateNodeDto = {};
     if (description !== nodeQuery.data?.description) {
@@ -326,9 +352,6 @@ function NodeDetailPage() {
     }
     if (manifest !== nodeQuery.data?.manifest) {
       updates.manifest = manifest;
-    }
-    if (summary !== nodeQuery.data?.summary) {
-      updates.summary = summary;
     }
     if (Object.keys(updates).length > 0) {
       updateNodeMutation.mutate(updates);
@@ -916,7 +939,7 @@ function NodeDetailPage() {
                     size="small"
                     startIcon={<SaveIcon />}
                     onClick={handleSave}
-                    disabled={isSaving || (description === node.description && manifest === node.manifest && summary === node.summary)}
+                    disabled={isSaving || (description === node.description && manifest === node.manifest)}
                   >
                     {isSaving ? 'Saving...' : saveSuccess ? 'Saved!' : 'Save'}
                   </Button>
@@ -937,15 +960,53 @@ function NodeDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Summary */}
+          {/* Guardrails */}
           <Card sx={{ mb: 2 }}>
             <CardContent>
-              <MarkdownField
-                label="Summary"
-                value={summary}
-                onChange={setSummary}
-                placeholder="No summary"
-              />
+              {isAdmin ? (
+                <MarkdownField
+                  label="Guardrails"
+                  value={guardrails}
+                  onChange={setGuardrails}
+                  placeholder="No guardrails"
+                  actions={
+                    <Button
+                      variant="contained"
+                      size="small"
+                      startIcon={<SaveIcon />}
+                      onClick={handleGuardrailsSave}
+                      disabled={isGuardrailsSaving || guardrails === node.guardrails}
+                    >
+                      {isGuardrailsSaving ? 'Saving...' : guardrailsSaveSuccess ? 'Saved!' : 'Save'}
+                    </Button>
+                  }
+                />
+              ) : (
+                <>
+                  <Typography variant="h6" sx={{ mb: 1 }}>Guardrails</Typography>
+                  <Box
+                    sx={{
+                      minHeight: 60,
+                      p: 1.5,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 1,
+                      '& img': { maxWidth: '100%' },
+                      '& pre': { overflow: 'auto', bgcolor: 'grey.100', p: 1, borderRadius: 1 },
+                      '& code': { bgcolor: 'grey.100', px: 0.5, borderRadius: 0.5, fontSize: '0.875em' },
+                      '& a': { color: 'primary.main' },
+                    }}
+                  >
+                    {guardrails ? (
+                      <ReactMarkdown>{guardrails}</ReactMarkdown>
+                    ) : (
+                      <Typography color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                        No guardrails
+                      </Typography>
+                    )}
+                  </Box>
+                </>
+              )}
             </CardContent>
           </Card>
 

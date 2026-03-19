@@ -86,7 +86,7 @@ export interface Node {
   manifest: string;
   caption: string;
   description: string;
-  summary: string;
+  guardrails: string;
   type?: NodeType | null;
   workflow?: NodeWorkflow | null;
   state?: NodeState | null;
@@ -157,7 +157,7 @@ export interface CreateNodeDto {
   Manifest?: string;
   Caption?: string;
   Description?: string;
-  Summary?: string;
+  Guardrails?: string;
   WorkflowId?: string;
 }
 
@@ -165,7 +165,6 @@ export interface UpdateNodeDto {
   manifest?: string;
   caption?: string;
   description?: string;
-  summary?: string;
 }
 
 export interface AddCommentDto {

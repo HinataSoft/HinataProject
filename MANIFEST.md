@@ -52,7 +52,8 @@ Users create Nodes under the Project with a stateful Type (e.g., "Task"). The No
 All operations are performed via the REST API. As a "user" can be both a human and a machine, AI Agents can:
 - Read Nodes (query by ID, list children, search)
 - Create new Nodes with specified Type and initial properties
-- Update Node properties (Manifest, Caption, Description, Summary)
+- Update Node properties (Manifest, Caption, Description)
+- Update Node Guardrails (auth: Admin)
 - Add Comments to Nodes
 - Change Workflow State (if authorized via Role-User mapping)
 - Manage Assignees (map Roles to Users)
@@ -68,7 +69,7 @@ The application exposes an MCP (Model Context Protocol) server that provides add
 | `get_node` | Get a node by its ID |
 | `list_children` | List children of a node |
 | `get_assigned_to_me` | List nodes assigned to the current user |
-| `update_node` | Update node properties (Manifest, Caption, Description, Summary) |
+| `update_node` | Update node properties (Manifest, Caption, Description) |
 | `set_node_state` | Transition a node to a different workflow state |
 | `add_comment` | Add a comment to a node |
 | `create_similar_child` | Create a new child node that inherits type, workflow, and assignees from parent. The new node's state is set to the workflow's default state. |
@@ -90,7 +91,7 @@ Every `Node` has exactly one parent (except for Root). Thus, `Node` objects make
   - `Manifest` – long technical specification of the `Node` that describes everything what the `Node` represents – **except** what is described in detail in child `Node` objects (text)
   - `Caption` – one line summary of the `Node` (text)
   - `Description` – short summary (one/two paragraphs) of the `Node` suitable for humans; distilled from `Manifest` (text)
-  - `Summary` – short technical summary of the `Node` suitable for machine interaction; distilled from `Manifest` (text)
+  - `Guardrails` – constraints and guardrails for AI agents working on this Node (text)
 - comments
   - `Comments` – list of comments (set of references to `Comment`)
 - inherited settings properties – setting this `Node` uses but are defined in ancestor `Node` objects – that is, parent, parent of parent etc.; inherited properties are calculated, not persisted. For the Root Node (which has no parent), its inherited properties are derived from its own Changed* properties – this makes Root the source of types, workflows, and roles for the entire installation.
@@ -148,7 +149,7 @@ Remarks for EF implementation:
 
 | Entity | Key Fields |
 |--------|------------|
-| Node | ParentId (self-ref), PublicId, TypeId, Manifest, Caption, Description, Summary, WorkflowId, StateId, Comments, AddedTypes, RemovedTypes, AddedWorkflows, RemovedWorkflows, AddedRoles, RemovedRoles |
+| Node | ParentId (self-ref), PublicId, TypeId, Manifest, Caption, Description, Guardrails, WorkflowId, StateId, Comments, AddedTypes, RemovedTypes, AddedWorkflows, RemovedWorkflows, AddedRoles, RemovedRoles |
 | Type | Kind (enum: Structural/Stateful), Name, Color, DefaultWorkflowId |
 | Workflow | DefaultStateId, States (collection) |
 | State | Name, IsFinalSuccess, IsFinalFailure |
@@ -211,7 +212,8 @@ Backend configuration
   - Read node by ID (auth: Passive)
   - List children of a node (auth: Passive)
   - List nodes whose Assignee is the current user - "Assigned To Me" (auth: Passive)
-  - Update node properties - Manifest, Caption, Description, Summary (auth: Active)
+  - Update node properties - Manifest, Caption, Description (auth: Active)
+  - Update node guardrails - Guardrails (auth: Admin)
   - Delete node (auth: Admin)
 - Settings Management (on structural nodes)
   - Set ChangedTypes - add/remove types available to descendants (auth: Admin)
@@ -266,7 +268,7 @@ Backend configuration
 
 #### Create Node
 - **Auth**: Active
-- **Input**: `ParentId`, `Type`, (optional: `Workflow`, `Manifest`, `Caption`, `Description`, `Summary`)
+- **Input**: `ParentId`, `Type`, (optional: `Workflow`, `Manifest`, `Caption`, `Description`, `Guardrails`)
 - **Validation**:
   - `ParentId` must exist and be a valid Node
   - `Type` must exist in Parent's `InheritedTypes`
@@ -312,7 +314,7 @@ Backend configuration
 
 #### Update Node
 - **Auth**: Active
-- **Input**: `NodeId`, (optional: `Manifest`, `Caption`, `Description`, `Summary`)
+- **Input**: `NodeId`, (optional: `Manifest`, `Caption`, `Description`)
 - **Validation**:
   - `NodeId` must exist
   - At least one property to update must be provided
@@ -321,6 +323,16 @@ Backend configuration
   - Create `AuditLogEntry` for each changed property (old value → new value)
   - Text properties: record diff in audit log
 - **Errors**: `NodeNotFound`, `NoPropertiesToUpdate`
+
+#### Update Guardrails
+- **Auth**: Admin
+- **Input**: `NodeId`, `Guardrails`
+- **Validation**:
+  - `NodeId` must exist
+- **Business Rules**:
+  - Update `Guardrails` property
+  - Create `AuditLogEntry` for the change
+- **Errors**: `NodeNotFound`
 
 #### Delete Node
 - **Auth**: Admin
@@ -483,7 +495,8 @@ All endpoints follow RESTful conventions. JSON is used for request/response bodi
 | GET | `/api/nodes/{id}/children` | List children of a node | Passive |
 | GET | `/api/nodes/assigned-to-me` | List nodes assigned to current user | Passive |
 | GET | `/api/nodes/assigned-to-me/poll` | Long-poll for changes in assigned nodes (blocks until change or timeout) | Passive |
-| PUT | `/api/nodes/{id}` | Update node properties | Active |
+| PUT | `/api/nodes/{id}` | Update node properties (Manifest, Caption, Description) | Active |
+| PUT | `/api/nodes/{id}/guardrails` | Update node guardrails | Admin |
 | DELETE | `/api/nodes/{id}` | Delete node (recursive) | Admin |
 
 ### Settings (on Structural Nodes)
@@ -530,13 +543,19 @@ Response: `{ "id": "uuid" }`
 #### Create Node
 ```
 POST /api/nodes
-Body: { "parentId": "uuid", "type": "uuid", "workflow": "uuid", "manifest": "...", "caption": "...", "description": "...", "summary": "..." }
+Body: { "parentId": "uuid", "type": "uuid", "workflow": "uuid", "manifest": "...", "caption": "...", "description": "...", "guardrails": "..." }
 ```
 
 #### Update Node
 ```
 PUT /api/nodes/{id}
-Body: { "manifest": "...", "caption": "...", "description": "...", "summary": "..." }
+Body: { "manifest": "...", "caption": "...", "description": "..." }
+```
+
+#### Update Guardrails
+```
+PUT /api/nodes/{id}/guardrails
+Body: { "guardrails": "..." }
 ```
 
 #### Set State

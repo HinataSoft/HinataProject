@@ -181,7 +181,7 @@ public static class RegisterPersistenceFactoryExtensions
                 Manifest = "",
                 Caption = "Root",
                 Description = "Root node of the hierarchy",
-                Summary = "Root",
+                Guardrails = "Root",
                 TypeId = folderType.Id,
                 WorkflowId = null,
                 StateId = null,

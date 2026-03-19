@@ -88,7 +88,7 @@ public class CreateSimilarChildTool : IToolHandler
             Caption = captionElement.GetString()!,
             Description = description ?? string.Empty,
             Manifest = manifest ?? string.Empty,
-            Summary = string.Empty,
+            Guardrails = string.Empty,
             TypeId = parent.TypeId,
             WorkflowId = parent.WorkflowId,
             // Use workflow's default state, not parent's state
@@ -120,7 +120,7 @@ public class CreateSimilarChildTool : IToolHandler
             child.Caption,
             child.Description,
             child.Manifest,
-            child.Summary,
+            child.Guardrails,
             Type = parent.Type != null ? new { parent.Type.Id, parent.Type.Name } : null,
             Workflow = parent.Workflow != null ? new { parent.Workflow.Id, parent.Workflow.Name } : null,
             State = parent.Workflow?.DefaultState != null ? new { parent.Workflow.DefaultState.Id, parent.Workflow.DefaultState.Name } : null,

@@ -19,7 +19,7 @@ public class NodeEntity : IId<Guid>, IHaveCreatedDate, IHaveLastModifiedDate
 
     public string Description { get; set; } = string.Empty;
 
-    public string Summary { get; set; } = string.Empty;
+    public string Guardrails { get; set; } = string.Empty;
 
     public Instant CreatedAt { get; set; }
 

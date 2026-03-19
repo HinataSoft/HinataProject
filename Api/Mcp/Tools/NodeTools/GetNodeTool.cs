@@ -56,7 +56,7 @@ public class GetNodeTool : IToolHandler
             node.Caption,
             node.Description,
             node.Manifest,
-            node.Summary,
+            node.Guardrails,
             Type = node.Type != null ? new { node.Type.Id, node.Type.Name, node.Type.Kind } : null,
             Workflow = node.Workflow != null ? new { node.Workflow.Id, node.Workflow.Name, States = node.Workflow.States.Select(s => new { s.Id, s.Name }).ToList() } : null,
             State = node.State != null ? new { node.State.Id, node.State.Name } : null

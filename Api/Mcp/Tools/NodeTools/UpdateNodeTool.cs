@@ -28,8 +28,7 @@ public class UpdateNodeTool : IToolHandler
                 "nodeId": { "type": "string", "description": "Node UUID" },
                 "manifest": { "type": "string", "description": "Technical specification" },
                 "caption": { "type": "string", "description": "One-line summary" },
-                "description": { "type": "string", "description": "Short human-readable summary" },
-                "summary": { "type": "string", "description": "Technical summary" }
+                "description": { "type": "string", "description": "Short human-readable summary" }
             },
             "required": ["nodeId"]
         }
@@ -74,12 +73,6 @@ public class UpdateNodeTool : IToolHandler
             node.Description = descElement.GetString();
             hasChanges = true;
         }
-        if (parameters.TryGetProperty("summary", out var summaryElement) && summaryElement.ValueKind != JsonValueKind.Null)
-        {
-            node.Summary = summaryElement.GetString();
-            hasChanges = true;
-        }
-
         if (!hasChanges)
             return ToolResult.Error("NoPropertiesToUpdate");
 
@@ -94,7 +87,7 @@ public class UpdateNodeTool : IToolHandler
             node.Manifest,
             node.Caption,
             node.Description,
-            node.Summary
+            node.Guardrails
         });
     }
 }

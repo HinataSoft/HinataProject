@@ -336,7 +336,7 @@ The main view is Node View. It will show one node at a time with full details. H
                                 | comment  |
 Description edit field          |----------|
 Manifest edit field             | comment  |
-Summary edit field              |----------|
+Guardrails edit field (Admin-only editing)              |----------|
                                 | etc.     |
 List of assigness:              |          |
 |------------------|            |----------|

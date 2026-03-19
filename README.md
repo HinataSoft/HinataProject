@@ -72,6 +72,10 @@ To Do → In Progress → Code Review → Done
 
 You can define custom workflows for each project, with as many states as you need.
 
+#### Guardrails – Rules for AI Agents
+
+Admins can set **Guardrails** on any node. Guardrails are constraints and instructions that guide AI agents working on that node — for example, coding standards, review checklists, or boundaries on what changes are acceptable. Only Admins can edit guardrails, ensuring consistent governance over automated work.
+
 #### Roles & Assignments
 
 **Roles** define what people (or AI agents) can do:
