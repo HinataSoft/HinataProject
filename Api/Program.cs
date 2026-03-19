@@ -60,6 +60,7 @@ builder.Services.AddSingleton<IToolHandler, ListChildrenTool>();
 builder.Services.AddSingleton<IToolHandler, GetAssignedToMeTool>();
 builder.Services.AddSingleton<IToolHandler, SetNodeStateTool>();
 builder.Services.AddSingleton<IToolHandler, AddCommentTool>();
+builder.Services.AddSingleton<IToolHandler, ListCommentsTool>();
 builder.Services.AddSingleton<IToolHandler, UpdateNodeTool>();
 builder.Services.AddSingleton<IToolHandler, CreateSimilarChildTool>();
 

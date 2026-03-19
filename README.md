@@ -124,7 +124,7 @@ All operations are available via REST API. This means AI agents can programmatic
 - Create new work items
 - Update properties
 - Change workflow states
-- Add comments
+- Add and list comments
 - Manage assignments
 
 #### Example: Creating a Task

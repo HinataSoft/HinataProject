@@ -72,6 +72,7 @@ The application exposes an MCP (Model Context Protocol) server that provides add
 | `update_node` | Update node properties (Manifest, Caption, Description) |
 | `set_node_state` | Transition a node to a different workflow state |
 | `add_comment` | Add a comment to a node |
+| `list_comments` | List comments for a node |
 | `create_similar_child` | Create a new child node that inherits type, workflow, and assignees from parent. The new node's state is set to the workflow's default state. |
 
 ## Data structure
